@@ -17,6 +17,7 @@ image even if a run is interrupted.
 
 import hashlib
 import os
+import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -48,11 +49,20 @@ def publish(data):
     os.replace(tmp, OUTPUT)
 
 
+def png_dimensions(data):
+    """Width and height from the PNG IHDR chunk, or None if absent."""
+    if len(data) < 24 or data[12:16] != b"IHDR":
+        return None
+    return struct.unpack(">II", data[16:24])
+
+
 def main():
     data = read_source()
     publish(data)
     digest = hashlib.sha256(data).hexdigest()
-    print(f"wrote {OUTPUT}: {len(data)} bytes, sha256 {digest}")
+    dims = png_dimensions(data)
+    size = f"{dims[0]}x{dims[1]}" if dims else "unknown size"
+    print(f"wrote {OUTPUT}: {len(data)} bytes, {size}, sha256 {digest}")
     return 0
 
 
